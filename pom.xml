@@ -297,6 +297,19 @@
     </dependencies>
 	
     <repositories>
+		<!-- ld-signatures-java:1.0.0 (transitive dependency of vcverifier) -->
+		<repository>
+			<id>danubetech-releases</id>
+			<name>Danubetech Maven Releases</name>
+			<url>https://repo.danubetech.com/repository/maven-releases/</url>
+			<layout>default</layout>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
 		<repository>
 			<id>ossrh-central</id>
 			<name>MavenCentralRepository</name>
