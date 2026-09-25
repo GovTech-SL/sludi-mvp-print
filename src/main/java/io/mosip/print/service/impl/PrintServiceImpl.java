@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
 import io.mosip.print.constant.CredentialStatusConstant;
@@ -195,6 +196,9 @@ public class PrintServiceImpl implements PrintService {
     @Value("${mosip.print.service.uincard.pdf.password.enable:false}")
     private boolean isPasswordProtected;
 
+    @Value("${mosip.print.partner.url:https://print-partner.nimbotix.lk/printcard}")
+    private String printPartnerUrl;
+
 	@Override
     public boolean generateCard(EventModel eventModel) {
         boolean isPrinted = false;
@@ -206,6 +210,7 @@ public class PrintServiceImpl implements PrintService {
             if (!hasPrintCredentialVerified(eventModel, decodedCredential)) {
 				return false;
 			}
+			notifyPrintPartner(decodedCredential);
             byte[] pdfbytes = getDocuments(decodedCredential,
                     eventModel.getEvent().getData().get("credentialType").toString(), eventModel.getEvent().getData().get("protectionKey").toString(),
                     eventModel.getEvent().getTransactionId(), isPasswordProtected).get("uinPdf");
@@ -216,6 +221,23 @@ public class PrintServiceImpl implements PrintService {
         }
         return isPrinted;
     }
+
+	/**
+	 * Sends the verified credential JSON to the print-partner viewer.
+	 * A notification failure is logged but does not interrupt card generation.
+	 *
+	 * @param decodedCredential verified credential JSON
+	 */
+	private void notifyPrintPartner(String decodedCredential) {
+		try {
+			Object response = restApiClient.postApi(printPartnerUrl, MediaType.APPLICATION_JSON,
+					decodedCredential, Object.class);
+			printLogger.info("Print partner notification sent successfully to {}. Response: {}",
+					printPartnerUrl, response);
+		} catch (Exception e) {
+			printLogger.error("Unable to notify print partner at {}", printPartnerUrl, e);
+		}
+	}
 
     /**
      * Decrypts print credential using MOSIP's decryption logic in ref. impl.
